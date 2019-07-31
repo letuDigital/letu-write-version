@@ -1,10 +1,10 @@
 {
   "name": "letu-write-version",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Write version task after build",
   "main": "index.js",
   "scripts": {
-    "test": "cross-env DIST_PATH=/ node index.js"
+    "test": "cross-env DIST_PATH=/ node index.js --writeTo=./"
   },
   "repository": {
     "type": "git",

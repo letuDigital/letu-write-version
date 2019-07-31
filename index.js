@@ -10,6 +10,28 @@ const dotenv = require('dotenv');
 dotenv.config({ silent: true });
 
 /**
+ *
+ * @type {Array}
+ */
+let configFromArgs = []
+const args = process.argv.slice(2);
+
+args.forEach(function(arg, i) {
+  const configParts = arg.split('=');
+  const param = configParts[0].replace('--', '').replace('-', '');
+
+  configFromArgs[param] = configParts[1];
+});
+
+/**
+ * Check if some path is set
+ */
+if (!configFromArgs.writeTo && !process.env.COMPILED_PATH) {
+  process.exitCode = 1;
+  throw new Error('Please provide path to write version files via --writeTo or COMPILED_PATH (.env file)');
+}
+
+/**
  * Get current date in 'DD.MM.YYY HH:MM' format
  *
  * @return {string}
@@ -58,7 +80,7 @@ const contentObject = {
   Commit: git.long()
 };
 
-const compiledDir = process.env.COMPILED_PATH || __dirname;
+const compiledDir = process.env.COMPILED_PATH || configFromArgs.writeTo;
 const distPath = process.env.DIST_PATH || '/dist';
 
 fs.writeFileSync(`${compiledDir}${distPath}/ui-version`, fileContent(contentObject), { flag: 'w' });
