@@ -81,7 +81,6 @@ const fileContent = (contentObject) => {
  * @param {string} version
  */
 const writeFiles = (version) => {
-  console.log('version:::', version)
   /**
    * Data to write in ui-version file
    */
