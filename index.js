@@ -2,33 +2,47 @@
  * Create `ui-version` and `buildHash`
  */
 
-const git = require('git-rev-sync');
-const fs = require('fs');
-const packageFile = require('./package.json');
-const dotenv = require('dotenv');
+const path = require('path')
+const git = require('git-rev-sync')
+const fs = require('fs')
+const dotenv = require('dotenv')
 
-dotenv.config({ silent: true });
+dotenv.config({silent: true})
 
 /**
  *
  * @type {Array}
  */
 let configFromArgs = []
-const args = process.argv.slice(2);
 
-args.forEach(function(arg, i) {
-  const configParts = arg.split('=');
-  const param = configParts[0].replace('--', '').replace('-', '');
-
-  configFromArgs[param] = configParts[1];
-});
+// Build path to package.json
+const pathToPackageFile = path.format({
+  dir: process.cwd(),
+  base: 'package.json'
+})
 
 /**
- * Check if some path is set
+ * Main function
  */
-if (!configFromArgs.writeTo && !process.env.COMPILED_PATH) {
-  process.exitCode = 1;
-  throw new Error('Please provide path to write version files via --writeTo or COMPILED_PATH (.env file)');
+const start = () => {
+  fs.access(pathToPackageFile, (err) => {
+    // If package.json doesn't exist
+    if (err) {
+      process.exitCode = 1
+      throw new Error('Please add package.json file to correct folder')
+    } else {
+      fs.readFile(pathToPackageFile, (err, data) => {
+        if (err) {
+          process.exitCode = 1
+          throw new Error('Cannot read package.json file')
+        }
+
+        const packageFile = JSON.parse(data)
+
+        writeFiles(`${packageFile.version}.${git.short()}`)
+      })
+    }
+  })
 }
 
 /**
@@ -37,23 +51,14 @@ if (!configFromArgs.writeTo && !process.env.COMPILED_PATH) {
  * @return {string}
  */
 const getBuildDate = () => {
-  const currentDate = new Date();
-  const day = ('0' + currentDate.getDate()).slice(-2);
-  const month = ('0' + (currentDate.getMonth() + 1)).slice(-2);
-  const hours = ('0' + currentDate.getHours()).slice(-2);
-  const minutes = ('0' + currentDate.getMinutes()).slice(-2);
+  const currentDate = new Date()
+  const day = ('0' + currentDate.getDate()).slice(-2)
+  const month = ('0' + (currentDate.getMonth() + 1)).slice(-2)
+  const hours = ('0' + currentDate.getHours()).slice(-2)
+  const minutes = ('0' + currentDate.getMinutes()).slice(-2)
 
-  return `${day}.${month}.${currentDate.getFullYear()} ${hours}:${minutes}`;
-};
-
-/**
- * Get app version from package.json and add git hash to the end.
- *
- * @return {string}
- */
-const getVersion = () => {
-  return `${packageFile.version}.${git.short()}`;
-};
+  return `${day}.${month}.${currentDate.getFullYear()} ${hours}:${minutes}`
+}
 
 /**
  * Prepare content from data object to put into file without extra spaces
@@ -62,26 +67,37 @@ const getVersion = () => {
  * @return {string}
  */
 const fileContent = (contentObject) => {
-  const contentArray = [];
+  const contentArray = []
   Object.keys(contentObject).forEach((item) => {
-    contentArray.push(`${item}: ${contentObject[item]}`);
-  });
+    contentArray.push(`${item}: ${contentObject[item]}`)
+  })
 
-  return contentArray.join('\n');
-};
+  return contentArray.join('\n')
+}
 
 /**
- * Data to write in ui-version file
+ * Write a files
+ *
+ * @param {string} version
  */
-const contentObject = {
-  Version: getVersion(),
-  Date: getBuildDate(),
-  Branch: git.branch(),
-  Commit: git.long()
-};
+const writeFiles = (version) => {
+  console.log('version:::', version)
+  /**
+   * Data to write in ui-version file
+   */
+  const contentObject = {
+    Version: version,
+    Date: getBuildDate(),
+    Branch: git.branch(),
+    Commit: git.long()
+  }
 
-const compiledDir = process.env.COMPILED_PATH || configFromArgs.writeTo;
-const distPath = process.env.DIST_PATH || '/dist';
+  const compiledDir = process.env.COMPILED_PATH || process.cwd()
+  const distPath = process.env.DIST_PATH || '/dist'
 
-fs.writeFileSync(`${compiledDir}${distPath}/ui-version`, fileContent(contentObject), { flag: 'w' });
-fs.writeFileSync(`${compiledDir}${distPath}/buildHash`, getVersion(), { flag: 'w' });
+  fs.writeFileSync(`${compiledDir}${distPath}/ui-version`, fileContent(contentObject), {flag: 'w'})
+  fs.writeFileSync(`${compiledDir}${distPath}/buildHash`, version, {flag: 'w'})
+}
+
+// Go, go, go!!
+start()
