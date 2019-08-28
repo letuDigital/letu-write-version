@@ -1,5 +1,5 @@
 /**
- * Create `ui-version` and `buildHash`
+ * Create `version.json` and `buildHash`
  */
 
 const path = require('path')
@@ -61,18 +61,13 @@ const getBuildDate = () => {
 }
 
 /**
- * Prepare content from data object to put into file without extra spaces
+ * Prepare content from data object to put into file witht pretty printing
  *
  * @param {object} contentObject
  * @return {string}
  */
 const fileContent = (contentObject) => {
-  const contentArray = []
-  Object.keys(contentObject).forEach((item) => {
-    contentArray.push(`${item}: ${contentObject[item]}`)
-  })
-
-  return contentArray.join('\n')
+  return JSON.stringify(contentObject, null, 2);
 }
 
 /**
@@ -85,16 +80,16 @@ const writeFiles = (version) => {
    * Data to write in ui-version file
    */
   const contentObject = {
-    Version: version,
-    Date: getBuildDate(),
-    Branch: git.branch(),
-    Commit: git.long()
+    version: version,
+    buildDate: getBuildDate(),
+    branch: git.branch(),
+    commit: git.long()
   }
 
   const compiledDir = process.env.COMPILED_PATH || process.cwd()
   const distPath = process.env.DIST_PATH || '/dist'
 
-  fs.writeFileSync(`${compiledDir}${distPath}/ui-version`, fileContent(contentObject), {flag: 'w'})
+  fs.writeFileSync(`${compiledDir}${distPath}/version.json`, fileContent(contentObject), {flag: 'w'})
   fs.writeFileSync(`${compiledDir}${distPath}/buildHash`, version, {flag: 'w'})
 }
 
