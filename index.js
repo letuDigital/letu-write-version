@@ -6,6 +6,7 @@ const path = require('path')
 const git = require('git-rev-sync')
 const fs = require('fs')
 const dotenv = require('dotenv')
+const parseArgs = require('minimist')(process.argv.slice(2));
 
 dotenv.config({silent: true})
 
@@ -13,7 +14,20 @@ dotenv.config({silent: true})
  *
  * @type {Array}
  */
-let configFromArgs = []
+let configFromArgs = parseArgs.add_env_hash && parseArgs.add_env_hash.split(',') || []
+
+const hashCode = (str) => {
+  if(!str) {
+    return '';
+  }
+  return '.' + str.split('').reduce((prevHash, currVal) =>
+    (((prevHash << 5) - prevHash) + currVal.charCodeAt(0))|0, 0);
+}
+
+const additionalHashString = configFromArgs.map((item) => {
+  return process.env[item] || '';
+}).join('')
+
 
 // Build path to package.json
 const pathToPackageFile = path.format({
@@ -39,7 +53,7 @@ const start = () => {
 
         const packageFile = JSON.parse(data)
 
-        writeFiles(`${packageFile.version}.${git.short()}`)
+        writeFiles(`${packageFile.version}.${git.short()}${hashCode(additionalHashString)}`)
       })
     }
   })
